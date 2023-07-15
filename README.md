@@ -11,6 +11,7 @@ Whether you're a security enthusiast, developer, or researcher, CEE offers a han
 The repository includes the following HTML files:
 
 1. SSRF Exploits: This HTML file demonstrates Server-Side Request Forgery (SSRF) vulnerabilities and provides examples of exploit payloads targeting vulnerable systems.
+
 2. SQL Injection: This HTML file showcases SQL Injection vulnerabilities and demonstrates how malicious SQL queries can be injected into a vulnerable application.
 
 3. XSS Injections: This HTML file illustrates Cross-Site Scripting (XSS) vulnerabilities and demonstrates how to execute malicious scripts in a victim's browser through the exploitation of input fields.
