@@ -1,6 +1,6 @@
 # ChatGPT Exploit Exploration
 
-Explore and understand exploits using ChatGPT
+## Explore and understand exploits using ChatGPT
 
 The ChatGPT Exploit Exploration (CEE) repository is a resource hub for exploring and understanding exploits using ChatGPT. This repository provides real-world examples, scenarios, and guides to delve into the concepts of exploits, learn how they can be executed using ChatGPT, and discover effective mitigation strategies.
 
@@ -25,5 +25,3 @@ To get started, simply open the respective HTML files in your web browser. Each 
 Contributions to the CEE repository are welcome! If you have additional exploit examples, insights, or mitigation strategies, feel free to submit a pull request and contribute to the community's knowledge base.
 
 Join the CEE community and start exploring exploits with ChatGPT today!
-
-
